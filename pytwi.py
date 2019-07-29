@@ -59,17 +59,33 @@ class Pytwi(object):
         if res.status_code == 200:
             return json.loads(res.text)
 
+    def to_str_status(self, status, include_entities=False):
+        """ ツイートを整形 TODO:entitesの処理
+        """
+        result = ""
+        # RTかどうか
+        if 'retweeted_status' in status:
+            result += status['user']['name'] + \
+                ' (@' + status['user']['screen_name'] + ')がリツイート\n'
+            result += self.to_str_status(
+                status['retweeted_status'], include_entities)
+
+        else:
+            l = [status['user']['name'] + ' (@' + status['user']['screen_name'] + ')',
+                 status['text'],
+                 'RT:' + str(status['retweet_count']) +
+                 ' FV:' + str(status['favorite_count']),
+                 status['created_at'],
+                 status['id_str'],
+                 ]
+            result += '\n'.join(l)
+        return result
+
     def show_list_tweets(self, list_id: str, count=10, since_id=-1, max_id=-1, include_entities=False):
         """ 指定IDのリストのツイートを表示
         """
         tweets = self.get_list_tweets_by_id(
             list_id, count, since_id, max_id, include_entities)
         for tweet in tweets:
-            print(tweet['user']['name'] +
-                  ' (@' + tweet['user']['screen_name'] + ')')
-            print(tweet['text'])
-            print('RT:' + str(tweet['retweet_count']) +
-                  ' FV:' + str(tweet['favorite_count']))
-            print(tweet['created_at'])
-            print(tweet['id_str'])
+            print(self.to_str_status(tweet))
             print('=' * 20, end='\n\n')
