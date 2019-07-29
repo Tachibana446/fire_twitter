@@ -1,5 +1,7 @@
 import json
 import os
+import re
+import subprocess
 from requests_oauthlib import OAuth1Session
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -79,7 +81,20 @@ class Pytwi(object):
                  status['id_str'],
                  ]
             result += '\n'.join(l)
+
         return result
+
+    def show_tweet_images(self, status):
+        """ツイートに含まれる画像を表示
+        """
+        if 'entities' in status and 'media' in status['entities']:
+            repttr = re.compile(r'.*jpg$', flags=(re.MULTILINE))
+            for media in status['entities']['media']:
+                uri = media['media_url_https']
+                if repttr.match(uri) is not None:
+                    print(uri)
+                    subprocess.run(
+                        "tiv {uri} -0 -w 30".format(uri=uri), shell=True)
 
     def show_list_tweets(self, list_id: str, count=10, since_id=-1, max_id=-1, include_entities=False):
         """ 指定IDのリストのツイートを表示
@@ -88,4 +103,6 @@ class Pytwi(object):
             list_id, count, since_id, max_id, include_entities)
         for tweet in tweets:
             print(self.to_str_status(tweet))
+            if include_entities:
+                self.show_tweet_images(tweet)
             print('=' * 20, end='\n\n')
